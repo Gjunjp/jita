@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自他動詞大測驗</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .quiz-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .question-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .question-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .option-label:hover {
+            background-color: #f9fafb;
+            border-color: #d1d5db;
+        }
+        input[type="radio"]:checked + .option-text {
+            font-weight: bold;
+        }
+        .option-label.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        /* Results styling */
+        .correct {
+            border-color: #10b981 !important;
+            background-color: #ecfdf5 !important;
+        }
+        .incorrect {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+        .explanation {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            display: none; /* Hidden by default, shown after submit */
+        }
+        .show-explanation .explanation {
+            display: block;
+        }
+        
+        /* Custom Radio Button */
+        input[type="radio"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            margin-right: 10px;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 0.15em solid currentColor;
+            border-radius: 50%;
+            display: grid;
+            place-content: center;
+        }
+        input[type="radio"]::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #3b82f6;
+        }
+        input[type="radio"]:checked::before {
+            transform: scale(1);
+        }
+        input[type="radio"]:checked {
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="py-10 px-4 md:px-0">
+
+    <div class="quiz-container">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-blue-800 mb-4 tracking-tight">自他動詞大測驗</h1>
+            <p class="text-gray-600 text-lg">高階程度挑戰 (N2-N1)・共 30 題</p>
+            <p class="text-sm text-gray-500 mt-2">請選擇最適合填入空格的動詞。注意格助詞（が/を）與前後文意。</p>
+        </div>
+
+        <form id="quiz-form">
+            <div id="questions-container">
+                <!-- Questions will be injected here by JavaScript -->
+            </div>
+
+            <div class="mt-8 text-center sticky bottom-4 z-10 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-200" id="submit-section">
+                <p id="unanswered-warning" class="text-red-500 mb-2 font-bold hidden">您還有題目尚未作答喔！</p>
+                <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:-translate-y-1 hover:shadow-xl text-lg w-full md:w-auto">
+                    送出答案看結果
+                </button>
+            </div>
+            
+            <div id="results-summary" class="hidden mt-8 p-6 bg-white rounded-xl shadow-lg border border-gray-200 text-center">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">測驗結果</h2>
+                <div class="flex justify-center items-center gap-4 my-6">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500">總題數</p>
+                        <p class="text-2xl font-bold">30</p>
+                    </div>
+                    <div class="h-10 w-px bg-gray-300"></div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500">答對</p>
+                        <p id="correct-count" class="text-3xl font-bold text-green-500">0</p>
+                    </div>
+                    <div class="h-10 w-px bg-gray-300"></div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500">得分</p>
+                        <p id="score-percentage" class="text-3xl font-bold text-blue-600">0%</p>
+                    </div>
+                </div>
+                <p id="feedback-message" class="text-lg font-medium text-gray-700"></p>
+                <button type="button" id="retry-btn" class="mt-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-full transition">
+                    再測一次
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // High-level transitive/intransitive verb questions data (30 questions)
+        const quizData = [
+            {
+                id: 1,
+                question: "台風の影響で、予定されていたイベントが______。",
+                options: ["延ばした", "延びた", "延ばされた", "延びさせた"],
+                answer: 1, // 延びた (Intransitive)
+                explanation: "「イベントが～」為自動詞句型。主語是事件本身，故使用自動詞「延びる」（延期、延長）。他動詞為「延ばす」（把～延期）。"
+            },
+            {
+                id: 2,
+                question: "彼は自分の非を______、すぐに謝罪した。",
+                options: ["認めて", "認まって", "認められて", "認まらせて"],
+                answer: 0, // 認めて (Transitive)
+                explanation: "「非を～」提示賓語，需要他動詞。「認める」（承認、認可）是他動詞。自動詞是「認まる」（被認可，較少用）。"
+            },
+            {
+                id: 3,
+                question: "新しい法律が______ことによって、私たちの生活は大きく変わるだろう。",
+                options: ["定めた", "定まった", "定めさせた", "定まらせた"],
+                answer: 1, // 定まった (Intransitive)
+                explanation: "「法律が～」為自動詞句型。「定まる」（決定、底定）是自動詞。他動詞為「定める」（制定、規定）。"
+            },
+            {
+                id: 4,
+                question: "長年の努力が実を結び、ついに彼の才能が世間に______。",
+                options: ["知った", "知らした", "知れた", "知らされた"],
+                answer: 2, // 知れた (Intransitive potential/spontaneous)
+                explanation: "「才能が～」為自動詞/自發狀態。「知れる」（為人所知、明朗）是「知る」的自發/可能形，在此作自動詞用。他動詞為「知らせる」（通知）。"
+            },
+            {
+                id: 5,
+                question: "政府は新しい経済政策を______方針だ。",
+                options: ["打ち出した", "打ち出た", "打ち出させた", "打ち出された"],
+                answer: 0, // 打ち出した (Transitive)
+                explanation: "「政策を～」提示賓語，需用他動詞。「打ち出す」（提出、推出）是他動詞。"
+            },
+            {
+                id: 6,
+                question: "交渉は難航したが、最終的には双方の意見が______。",
+                options: ["まとめた", "まとまった", "まとめさせた", "まとまらせた"],
+                answer: 1, // まとまった (Intransitive)
+                explanation: "「意見が～」為自動詞句型。「まとまる」（一致、解決）是自動詞。他動詞為「まとめる」（使～一致、整理）。"
+            },
+            {
+                id: 7,
+                question: "この問題については、専門家の間で意見が______いる。",
+                options: ["分かれて", "分けて", "分かせて", "分けさせて"],
+                answer: 0, // 分かれて (Intransitive)
+                explanation: "「意見が～」表示狀態，使用自動詞。「分かれる」（分歧、分開）是自動詞。他動詞為「分ける」（分配、區分）。"
+            },
+            {
+                id: 8,
+                question: "彼女はショックのあまり、気を______しまった。",
+                options: ["失って", "失せて", "失わせて", "失わさせて"],
+                answer: 0, // 失って (Transitive)
+                explanation: "慣用句「気を失う」（暈倒、失去意識）。「気を」是賓語，用他動詞「失う」。自動詞「失せる」通常用於物品消失。"
+            },
+            {
+                id: 9,
+                question: "厳しい寒さで、水道管が______しまった。",
+                options: ["破って", "破れて", "破らせて", "破れさせて"],
+                answer: 1, // 破れて (Intransitive)
+                explanation: "「水道管が～」描述自然發生或結果狀態，用自動詞。「破れる」（破裂）是自動詞。他動詞為「破る」（弄破、打破）。"
+            },
+            {
+                id: 10,
+                question: "彼は怒りを______ように、静かに話し始めた。",
+                options: ["沈む", "沈める", "沈ませる", "沈めさせる"],
+                answer: 1, // 沈める (Transitive)
+                explanation: "「怒りを～」提示賓語。「（感情を）沈める」表示平息感情，是他動詞。自動詞是「沈む」（下沉）。"
+            },
+            {
+                id: 11,
+                question: "時代の変化に伴い、古い習慣は次第に______ていった。",
+                options: ["廃れ", "廃し", "廃らせ", "廃らさせ"],
+                answer: 0, // 廃れて (Intransitive)
+                explanation: "「習慣が廃れる」（習慣被廢棄、過時）。「廃れる」是自動詞。他動詞為「廃す」（廢除）。"
+            },
+            {
+                id: 12,
+                question: "社長は社員のモチベーションを______ために、新しい評価制度を導入した。",
+                options: ["上がる", "上げる", "上がらせる", "上げさせる"],
+                answer: 1, // 上げる (Transitive)
+                explanation: "「モチベーションを～」提示賓語，需用他動詞「上げる」（提高）。自動詞為「上がる」（上升）。"
+            },
+            {
+                id: 13,
+                question: "薬の副作用で、急に吐き気が______。",
+                options: ["催した", "催された", "催させた", "催さられた"],
+                answer: 0, // 催した (Transitive/Intransitive usage)
+                explanation: "「吐き気を催す」（感到噁心）。這裡的「催す」作他動詞（或無意志自動詞的特殊用法），表示引起某種生理現象。雖然助詞常為「が/を」，但「催す」本身是他動詞。"
+            },
+            {
+                id: 14,
+                question: "計画の変更を余儀なくされ、スケジュールが大きく______。",
+                options: ["狂った", "狂わせた", "狂わされた", "狂わさせた"],
+                answer: 0, // 狂った (Intransitive)
+                explanation: "「スケジュールが～」表示事物失去常態，用自動詞「狂う」（打亂、發瘋）。他動詞為「狂わせる」（使～打亂）。"
+            },
+            {
+                id: 15,
+                question: "彼は自分の立場を______、部下に無理な要求をした。",
+                options: ["笠に着て", "笠に着せて", "笠に着られて", "笠に着せられて"],
+                answer: 0, // 笠に着て (Transitive idiom)
+                explanation: "慣用句「（権力を）笠に着る」（仗勢欺人）。「着る」是他動詞。自動詞/使役態在此不適用。"
+            },
+            {
+                id: 16,
+                question: "この布は水分をよく______性質がある。",
+                options: ["含む", "含める", "含ませる", "含めさせる"],
+                answer: 0, // 含む (Transitive)
+                explanation: "「水分を～」提示賓語。「含む」（包含、含有）是他動詞。他動詞「含める」則多用於「使之包含、叮囑」。"
+            },
+            {
+                id: 17,
+                question: "議論が白熱し、ついに本音があらわに______。",
+                options: ["なった", "した", "させた", "された"],
+                answer: 0, // なった (Intransitive expression)
+                explanation: "「あらわになる」（暴露、顯露）是自動詞表現。「あらわにする」才是他動詞表現（將～暴露）。"
+            },
+            {
+                id: 18,
+                question: "その事件は、社会に大きな波紋を______。",
+                options: ["投げた", "投げかけた", "投じた", "投げ出した"],
+                answer: 2, // 投じた (Transitive idiom)
+                explanation: "慣用句「波紋を投じる」（引起軒然大波）。「投じる」是他動詞。"
+            },
+            {
+                id: 19,
+                question: "長時間のパソコン作業で、目が______しまった。",
+                options: ["疲らして", "疲れて", "疲れさせて", "疲れられて"],
+                answer: 1, // 疲れて (Intransitive)
+                explanation: "「目が～」表示狀態變化，用自動詞。「疲れる」是自動詞。他動詞為「疲れさせる」（使～疲倦）。"
+            },
+            {
+                id: 20,
+                question: "彼は責任を逃れるために、話を______。",
+                options: ["そらした", "それた", "そらさせた", "それさせた"],
+                answer: 0, // そらした (Transitive)
+                explanation: "「話を～」提示賓語。「話をそらす」（岔開話題）需用他動詞「そらす」。自動詞為「それる」（偏離）。"
+            },
+            {
+                id: 21,
+                question: "ストレスが原因で、自律神経のバランスが______人が増えている。",
+                options: ["崩した", "崩れた", "崩させた", "崩れさせた"],
+                answer: 1, // 崩れた (Intransitive)
+                explanation: "「バランスが～」表示狀態崩壞，用自動詞。「崩れる」是自動詞。他動詞為「崩す」（破壞、弄亂）。"
+            },
+            {
+                id: 22,
+                question: "彼女の言葉は、私の心の奥深くに______。",
+                options: ["刺した", "刺さった", "刺させた", "刺さらせた"],
+                answer: 1, // 刺さった (Intransitive)
+                explanation: "「（言葉が）心に～」表示事物進入某狀態，用自動詞。「刺さる」（扎進、刺入）是自動詞。他動詞為「刺す」（刺、扎）。"
+            },
+            {
+                id: 23,
+                question: "プロジェクトの成功は、チームワークに______いると言っても過言ではない。",
+                options: ["かかって", "かけて", "かからせて", "かけさせて"],
+                answer: 0, // かかって (Intransitive)
+                explanation: "「～にかかっている」（取決於～）。「かかる」是自動詞。他動詞為「かける」。"
+            },
+            {
+                id: 24,
+                question: "彼は巧みな話術で、人々を______。",
+                options: ["惑った", "惑わした", "惑わせた", "惑わされた"],
+                answer: 1, // 惑わした (Transitive)
+                explanation: "「人々を～」提示賓語。「惑わす」（迷惑、欺騙）是他動詞。自動詞為「惑う」（困惑）。"
+            },
+            {
+                id: 25,
+                question: "事件の真相が、徐々に______きた。",
+                options: ["明らかにして", "明らかになって", "明らかにさせて", "明らかにされて"],
+                answer: 1, // 明らかになって (Intransitive expression)
+                explanation: "「真相が～」表示狀態改變。「明らかになる」（變得明朗）是自動詞表現。他動詞表現為「明らかにする」（弄清楚）。"
+            },
+            {
+                id: 26,
+                question: "会社の業績悪化により、ついに人員削減に______。",
+                options: ["踏み切った", "踏み切らせた", "踏み切られた", "踏み切らされた"],
+                answer: 0, // 踏み切った (Intransitive)
+                explanation: "「～に踏み切る」（下定決心做某事）。「踏み切る」是自動詞（亦可作他動詞，但此處用法為自動詞）。"
+            },
+            {
+                id: 27,
+                question: "彼は財産をすべて事業に______、一文無しになった。",
+                options: ["注いだ", "注がれた", "注がせた", "注がさせられた"],
+                answer: 0, // 注いだ (Transitive)
+                explanation: "「財産を～」提示賓語。「注ぐ（そそぐ）」（傾注、注入）是他動詞。"
+            },
+            {
+                id: 28,
+                question: "厳しい訓練を経て、彼の技術は一段と______。",
+                options: ["磨いた", "磨かれた", "磨かせた", "磨かさせた"],
+                answer: 1, // 磨かれた (Passive/Intransitive sense)
+                explanation: "「技術が～」。雖然「磨く」是他動詞，但這裡主語是「技術」，因此使用被動態「磨かれる」（被磨練）來表示狀態的提升，具有類似自動詞的功能。"
+            },
+            {
+                id: 29,
+                question: "不注意で、大切な書類を水に______しまった。",
+                options: ["濡れた", "濡らした", "濡れさせた", "濡らされた"],
+                answer: 1, // 濡らした (Transitive)
+                explanation: "「書類を～」提示賓語，表示人為動作的結果，用他動詞。「濡らす」（弄濕）是他動詞。自動詞為「濡れる」（濕）。"
+            },
+            {
+                id: 30,
+                question: "交渉相手の態度が急に______、契約は白紙に戻った。",
+                options: ["硬くした", "硬化させた", "硬化した", "硬くさせた"],
+                answer: 2, // 硬化した (Intransitive)
+                explanation: "「態度が～」表示狀態變化。「硬化する」（變得強硬）作自動詞用。他動詞為「硬化させる」（使之強硬）。"
+            }
+        ];
+
+        const questionsContainer = document.getElementById('questions-container');
+
+        quizData.forEach((q, index) => {
+            const questionHTML = `
+                <div class="question-card" id="q-card-${index}">
+                    <div class="flex items-start mb-4">
+                        <span class="inline-flex items-center justify-center bg-blue-100 text-blue-800 text-sm font-bold w-8 h-8 rounded-full mr-3 shrink-0">
+                            ${q.id}
+                        </span>
+                        <h3 class="text-lg font-medium leading-relaxed">${q.question}</h3>
+                    </div>
+                    <div class="space-y-2 pl-11 options-group">
+                        ${q.options.map((opt, optIndex) => `
+                            <label class="option-label group" tabindex="0">
+                                <input type="radio" name="q${index}" value="${optIndex}" class="peer">
+                                <span class="option-text text-gray-700 group-hover:text-gray-900">${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div class="explanation pl-11 hidden">
+                        <strong class="text-blue-800 block mb-1">解析：</strong>
+                        ${q.explanation}
+                    </div>
+                </div>
+            `;
+            questionsContainer.insertAdjacentHTML('beforeend', questionHTML);
+        });
+
+        // Add click and keyboard event listeners for styling the selected option
+        document.querySelectorAll('.options-group').forEach(group => {
+            const labels = group.querySelectorAll('.option-label');
+            const inputs = group.querySelectorAll('input[type="radio"]');
+
+            inputs.forEach(input => {
+                input.addEventListener('change', (e) => {
+                    // Remove selected class from all in this group
+                    labels.forEach(l => l.classList.remove('selected'));
+                    // Add selected class to the parent label of the checked input
+                    if(e.target.checked) {
+                        e.target.closest('.option-label').classList.add('selected');
+                    }
+                    
+                    // Hide warning if they answered something after warning appeared
+                    document.getElementById('unanswered-warning').classList.add('hidden');
+                });
+            });
+
+            // Keyboard accessibility (Space/Enter to select)
+            labels.forEach(label => {
+                label.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        label.querySelector('input').click();
+                    }
+                });
+            });
+        });
+
+        const form = document.getElementById('quiz-form');
+        const submitSection = document.getElementById('submit-section');
+        const resultsSummary = document.getElementById('results-summary');
+        const submitBtn = document.getElementById('submit-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const warningText = document.getElementById('unanswered-warning');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // Check if all questions are answered
+            let allAnswered = true;
+            let firstUnanswered = null;
+
+            quizData.forEach((_, index) => {
+                const answered = document.querySelector(`input[name="q${index}"]:checked`);
+                if (!answered) {
+                    allAnswered = false;
+                    if (!firstUnanswered) firstUnanswered = document.getElementById(`q-card-${index}`);
+                }
+            });
+
+            if (!allAnswered) {
+                warningText.classList.remove('hidden');
+                // Scroll to the first unanswered question
+                firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Briefly flash the background to draw attention
+                firstUnanswered.classList.add('bg-red-50');
+                setTimeout(() => firstUnanswered.classList.remove('bg-red-50'), 1000);
+                return;
+            }
+
+            // Calculate Score and Show Results
+            let score = 0;
+            quizData.forEach((q, index) => {
+                const card = document.getElementById(`q-card-${index}`);
+                const selectedInput = document.querySelector(`input[name="q${index}"]:checked`);
+                const selectedValue = parseInt(selectedInput.value);
+                const labels = card.querySelectorAll('.option-label');
+
+                // Disable all inputs
+                card.querySelectorAll('input').forEach(input => input.disabled = true);
+
+                // Show Explanation
+                card.classList.add('show-explanation');
+
+                // Mark Correct/Incorrect
+                if (selectedValue === q.answer) {
+                    score++;
+                    selectedInput.closest('.option-label').classList.add('correct');
+                } else {
+                    selectedInput.closest('.option-label').classList.add('incorrect');
+                    // Highlight the correct one too
+                    labels[q.answer].classList.add('correct', 'opacity-70');
+                }
+            });
+
+            // Display Results Summary
+            document.getElementById('correct-count').textContent = score;
+            const percentage = Math.round((score / quizData.length) * 100);
+            document.getElementById('score-percentage').textContent = `${percentage}%`;
+
+            const feedbackMsg = document.getElementById('feedback-message');
+            if (percentage >= 90) {
+                feedbackMsg.textContent = "太厲害了！你的自他動詞掌握度達到了母語人士等級！";
+                feedbackMsg.className = "text-lg font-bold text-green-600";
+            } else if (percentage >= 70) {
+                feedbackMsg.textContent = "很不錯喔！你對自他動詞有很好的理解，繼續保持！";
+                feedbackMsg.className = "text-lg font-bold text-blue-600";
+            } else if (percentage >= 50) {
+                feedbackMsg.textContent = "及格了！自他動詞是日文的難關，請仔細閱讀解析加強記憶。";
+                feedbackMsg.className = "text-lg font-bold text-yellow-600";
+            } else {
+                feedbackMsg.textContent = "再接再厲！建議多注意句子中的「が」和「を」，重新複習基礎概念。";
+                feedbackMsg.className = "text-lg font-bold text-red-600";
+            }
+
+            // UI Transitions
+            submitSection.classList.add('hidden');
+            resultsSummary.classList.remove('hidden');
+            
+            // Scroll to top to see results
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        retryBtn.addEventListener('click', () => {
+            // Reset form
+            form.reset();
+            
+            // Reset UI states
+            document.querySelectorAll('.option-label').forEach(label => {
+                label.classList.remove('selected', 'correct', 'incorrect', 'opacity-70');
+            });
+            document.querySelectorAll('.question-card').forEach(card => {
+                card.classList.remove('show-explanation');
+            });
+            document.querySelectorAll('input').forEach(input => {
+                input.disabled = false;
+            });
+
+            submitSection.classList.remove('hidden');
+            resultsSummary.classList.add('hidden');
+            warningText.classList.add('hidden');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>
